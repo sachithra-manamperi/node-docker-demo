@@ -1,38 +1,51 @@
-# Docker
-# Build and push an image to Azure Container Registry
-# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
-
 trigger:
-- master
+- main
 
-resources:
-- repo: self
+pool: myUbuntuAgent
 
 variables:
-  # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: '985626b2-8e4e-47e8-938c-6969d59ad420'
-  imageRepository: 'sachithramanamperinodedockerdemo'
-  containerRegistry: 'cswebappdocker0041acr.azurecr.io'
+  dockerRegistryServiceConnection: 'sachithra-docker-hub'
+  imageRepository: 'sachithram/node-demo'
+  containerRegistry: 'docker.io'
   dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
   tag: '$(Build.BuildId)'
-
-  # Agent VM image name
-  vmImageName: 'ubuntu-latest'
-
+  
 stages:
-- stage: Build
-  displayName: Build and push stage
+
+- stage: BuildDockerImage
+  displayName: 'Build Docker Image'
   jobs:
   - job: Build
-    displayName: Build
-    pool: myUbuntuAgent
+    displayName: 'Build'
     steps:
     - task: Docker@2
-      displayName: Build and push an image to container registry
+      displayName: 'Build Docker image'
       inputs:
-        command: buildAndPush
-        repository: $(imageRepository)
-        dockerfile: $(dockerfilePath)
         containerRegistry: $(dockerRegistryServiceConnection)
+        repository: $(imageRepository)
+        command: 'build'
+        Dockerfile: $(dockerfilePath)
         tags: |
           $(tag)
+          latest
+    
+- stage: PushDockerImage
+  displayName: 'Push Docker Image to Docker Hub'
+  dependsOn: BuildDockerImage
+  condition: succeeded()
+  jobs:
+  - job: Push
+    displayName: 'Push'
+    steps:
+    - task: Docker@2
+      displayName: 'Push Docker image'
+      inputs:
+        containerRegistry: $(dockerRegistryServiceConnection)
+        repository: $(imageRepository)
+        command: 'push'
+        tags: |
+          $(tag)
+          latest
+
+#dependsOn: This line specifies this stage depends on the successful completion of the previous stage.
+#condition: succeeded() This line specifies that this stage should only run if the previous stage completed successfully
