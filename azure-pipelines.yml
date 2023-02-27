@@ -1,18 +1,87 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
 trigger:
-- master
+  branches:
+    include: 
+    - master
+variables:
+  buildConfiguration: 'Release'
+  location: 'West US 2'
+  acrHostName: 'nodedemowebappdocker0041acr.azurecr.io'
+  acrName: 'nodedemowebappdocker0041acr'
+  rgName: 'nodedemowebappdocker0041-rg'
+  imageName: 'nodedemowebappdocker0041'
+  webAppName: 'nodedemowebappdocker0041'
 
-pool: myUbuntuAgent
+stages:
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+# Build Stage
+- stage: BuildAndTest
+  jobs:
+  - job: BuildAndTest
+    pool: myUbuntuAgent
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+    steps:
+
+    # Create or update the ACR resource
+    - task: AzureResourceGroupDeployment@2
+      displayName: 'Azure Deployment:Create Azure Container Registry'
+      inputs:
+        azureSubscription: 'newAzureSC'
+        resourceGroupName: '$(rgName)'
+        location: $(location)
+        overrideParameters: '-registryName "$(acrName)" -registryLocation "$(location)" -registrySku standard' 
+  
+
+    # Build container image
+    - task: Docker@1
+      displayName: 'Build container image'
+      inputs:
+        azureSubscriptionEndpoint: 'newAzureSC'
+        azureContainerRegistry: '$(acrHostName)'
+        imageName: '$(imageName):$(Build.BuildId)'
+        useDefaultContext: false
+        buildContext: '$(System.DefaultWorkingDirectory)/PublishedWebApp'
+
+    # Push container image
+    - task: Docker@1
+      displayName: 'Push container image'
+      inputs:
+        azureSubscriptionEndpoint: 'AzureSC'
+        azureContainerRegistry: '$(acrHostName)'
+        command: 'Push an image'
+        imageName: '$(imageName):$(Build.BuildId)'
+
+    # Copy ARM templates
+    - task: CopyFiles@2
+      displayName: 'Copy ARM templates'
+      inputs:
+        SourceFolder: ArmTemplates
+        TargetFolder: '$(build.artifactstagingdirectory)'
+
+    # Publish the app as an artifact
+    - publish: $(Build.StagingDirectory)
+      artifact: app
+
+# Staging release
+- stage: Staging
+  jobs:
+  - job: Release
+    pool: myUbuntuAgent
+    steps:
+    # Don't clone the repo
+    - checkout: none
+
+    # Download the published application artifact
+    - download: current
+      artifact: app
+
+    # Deploy App Service
+    - task: AzureWebAppContainer@1
+      displayName: 'Deploy Azure App Service'
+      inputs:
+        azureSubscription: 'AzureSC'
+        appName: 'nodedemo'
+        imageName: '$(imageName):$(Build.BuildId)'
+        osType: 'Linux'
+
+
+        
