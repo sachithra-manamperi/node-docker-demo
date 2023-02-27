@@ -23,13 +23,12 @@ stages:
 
     # Create or update the ACR resource
     - task: AzureResourceGroupDeployment@2
-      displayName: 'Azure Deployment:Create Azure Container Registry'
+      displayName: 'Create Azure Container Registry'
       inputs:
         azureSubscription: 'newAzureSC'
         resourceGroupName: '$(rgName)'
         location: $(location)
-        overrideParameters: '-registryName "$(acrName)" -registryLocation "$(location)" -registrySku standard' 
-  
+
 
     # Build container image
     - task: Docker@1
@@ -49,17 +48,6 @@ stages:
         azureContainerRegistry: '$(acrHostName)'
         command: 'Push an image'
         imageName: '$(imageName):$(Build.BuildId)'
-
-    # Copy ARM templates
-    - task: CopyFiles@2
-      displayName: 'Copy ARM templates'
-      inputs:
-        SourceFolder: ArmTemplates
-        TargetFolder: '$(build.artifactstagingdirectory)'
-
-    # Publish the app as an artifact
-    - publish: $(Build.StagingDirectory)
-      artifact: app
 
 # Staging release
 - stage: Staging
