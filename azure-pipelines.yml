@@ -6,7 +6,7 @@
 trigger:
 - master
 
-pool: myBuildAgent
+pool: myUbuntuAgent
 
 steps:
 - script: echo Hello, world!
