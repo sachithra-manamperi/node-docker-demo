@@ -45,7 +45,7 @@ stages:
     - task: Docker@1
       displayName: 'Push container image'
       inputs:
-        azureSubscriptionEndpoint: 'AzureSC'
+        azureSubscriptionEndpoint: 'newAzureSC'
         azureContainerRegistry: '$(acrHostName)'
         command: 'Push an image'
         imageName: '$(imageName):$(Build.BuildId)'
@@ -78,7 +78,7 @@ stages:
     - task: AzureWebAppContainer@1
       displayName: 'Deploy Azure App Service'
       inputs:
-        azureSubscription: 'AzureSC'
+        azureSubscription: 'newAzureSC'
         appName: 'nodedemo'
         imageName: '$(imageName):$(Build.BuildId)'
         osType: 'Linux'
