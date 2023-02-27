@@ -15,7 +15,7 @@ variables:
 stages:
 
 - stage: BuildDockerImage
-  displayName: 'Build Docker Image'
+  displayName: 'Build-Docker-Image'
   jobs:
   - job: Build
     displayName: 'Build'
