@@ -9,8 +9,7 @@ variables:
   containerRegistry: 'docker.io'
   dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
   tag: '$(Build.BuildId)'
-  containerAppName: 'node-demo'
-  resourceGroupName: 'deploy-container-node-demo'
+
   
 stages:
 
@@ -51,21 +50,3 @@ stages:
 
 #dependsOn: This line specifies this stage depends on the successful completion of the previous stage.
 #condition: succeeded() This line specifies that this stage should only run if the previous stage completed successfully
-
-- stage: DeployContainerApp
-  displayName: 'Deploy Container App to Azure'
-  dependsOn: PushDockerImage
-  condition: succeeded()
-  jobs:
-  - job: Deploy
-    displayName: 'Deploy'
-    steps:
-    - task: AzureResourceGroupDeployment@2
-      displayName: 'Create Resource Group'
-      inputs:
-        azureSubscription: 'newAzureSC'
-        resourceGroupName: $(resourceGroupName)
-        location: 'eastus'
-        csmFile: '$(System.DefaultWorkingDirectory)/arm-template.json'
-        csmParametersFile: '$(System.DefaultWorkingDirectory)/arm-template-parameters.json'
-        overrideParameters: '-containerAppName $(containerAppName) -dockerImageName $(containerRegistry)/$(imageRepository):$(tag)'
